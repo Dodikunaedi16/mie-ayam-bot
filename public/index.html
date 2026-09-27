@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chatbot Mie Ayam Familly</title>
+<style>
+  :root {
+    --primary: #ea580c;
+    --primary-dark: #c2410c;
+    --primary-light: #fed7aa;
+    --bg: #faf7f2;
+    --surface: #ffffff;
+    --bubble-bot: #f3f0ea;
+    --text: #292524;
+    --text-muted: #8a8580;
+    --border: rgba(0,0,0,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1c1917;
+      --surface: #26221f;
+      --bubble-bot: #34302b;
+      --text: #f5f1ea;
+      --text-muted: #a39d94;
+      --border: rgba(255,255,255,0.08);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1917;
+    --surface: #26221f;
+    --bubble-bot: #34302b;
+    --text: #f5f1ea;
+    --text-muted: #a39d94;
+    --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    padding: 0;
+  }
+  .chat-container {
+    width: 100%;
+    max-width: 480px;
+    background: var(--surface);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    box-shadow: 0 0 40px rgba(0,0,0,0.06);
+  }
+  @media (min-width: 500px) {
+    body { padding: 24px; align-items: center; }
+    .chat-container {
+      height: min(720px, 92vh);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+  }
+
+  .chat-header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    padding: 16px 18px;
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .header-text { flex: 1; min-width: 0; }
+  .header-text .title {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1.2;
+  }
+  .header-text .status {
+    font-size: 12.5px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4ade80;
+    flex-shrink: 0;
+  }
+
+  .chat-messages {
+    flex: 1;
+    padding: 18px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    scroll-behavior: smooth;
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    margin: 4px 0;
+    animation: fadeIn 0.25s ease;
+  }
+  .row.user { justify-content: flex-end; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .mini-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .bubble-wrap { max-width: 78%; display: flex; flex-direction: column; }
+  .row.user .bubble-wrap { align-items: flex-end; }
+  .msg {
+    padding: 10px 14px;
+    border-radius: 16px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    font-size: 14.5px;
+    word-wrap: break-word;
+  }
+  .bot .msg {
+    background: var(--bubble-bot);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+  .user .msg {
+    background: var(--primary);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .timestamp {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 3px;
+    padding: 0 4px;
+  }
+
+  .typing-dots {
+    display: flex;
+    gap: 4px;
+    padding: 12px 14px;
+  }
+  .typing-dots span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    opacity: 0.6;
+    animation: bounce 1.2s infinite ease-in-out;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  .quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 4px 16px 12px;
+    flex-shrink: 0;
+  }
+  .quick-replies button {
+    background: var(--bubble-bot);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 7px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .quick-replies button:hover { background: var(--primary-light); }
+  .quick-replies button:active { transform: scale(0.96); }
+
+  .chat-input {
+    display: flex;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    padding: 10px 12px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+  .chat-input input {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 11px 16px;
+    font-size: 14.5px;
+    outline: none;
+    background: var(--bg);
+    color: var(--text);
+    min-width: 0;
+  }
+  .chat-input input:focus { border-color: var(--primary); }
+  .send-btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .send-btn:hover { background: var(--primary-dark); }
+  .send-btn:active { transform: scale(0.92); }
+  .send-btn svg { width: 19px; height: 19px; }
+
+  .chat-messages::-webkit-scrollbar { width: 5px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .qris-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 20px;
+  }
+  .qris-modal.open { display: flex; }
+  .qris-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .qris-card img {
+    width: 100%;
+    border-radius: 8px;
+    display: block;
+  }
+  .qris-card .close-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #f1eee9;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #292524;
+    line-height: 1;
+  }
+  .qris-card .qris-title {
+    font-weight: 700;
+    font-size: 15px;
+    color: #292524;
+    margin-bottom: 10px;
+  }
+  .qris-card .qris-note {
+    font-size: 13px;
+    color: #6b6560;
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+  .wa-confirm-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 14px;
+    background: #25D366;
+    color: #fff;
+    text-decoration: none;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .wa-confirm-btn:hover { background: #1eb857; }
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="chat-header">
+    <div class="avatar">🍜</div>
+    <div class="header-text">
+      <div class="title">Mie Ayam Sahabat</div>
+      <div class="status"><span class="status-dot"></span>Online — siap bantu pesanan</div>
+    </div>
+  </div>
+
+  <div class="chat-messages" id="messages"></div>
+
+  <div class="quick-replies">
+    <button onclick="kirimCepat('Lihat menu')">📋 Lihat Menu</button>
+    <button onclick="kirimCepat('Ada rekomendasi menu spesial?')">⭐ Spesial</button>
+    <button onclick="kirimCepat('Ada minuman apa saja?')">🥤 Minuman</button>
+    <button onclick="bukaQris()">💳 Bayar QRIS</button>
+    <button onclick="konfirmasiPesanan()">🧾 Konfirmasi Pesanan</button>
+  </div>
+
+  <div class="chat-input">
+    <input type="text" id="input" placeholder="Tulis pesan..." autocomplete="off" />
+    <button class="send-btn" onclick="kirim()" aria-label="Kirim">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div class="qris-modal" id="qrisModal" onclick="tutupQrisJikaLuar(event)">
+  <div class="qris-card">
+    <button class="close-btn" onclick="tutupQris()">✕</button>
+    <div class="qris-title">Scan untuk Bayar</div>
+    <img src="qris.jpg" alt="QRIS Pembayaran" />
+    <div class="qris-note">Setelah bayar, tekan tombol di bawah untuk kirim bukti pembayaran biar pesananmu langsung diproses.</div>
+    <a class="wa-confirm-btn" id="waConfirmLink" href="#" target="_blank" rel="noopener">
+      ✅ Konfirmasi Pembayaran via WhatsApp
+    </a>
+  </div>
+</div>
+
+<script>
+  const messagesEl = document.getElementById("messages");
+  const inputEl = document.getElementById("input");
+  const riwayatPesanCustomer = [];
+  const chatHistory = [];
+  let appConfig = {
+    namaWarung: "Mie Ayam Sahabat",
+    namaWarungWa: "Mie Ayam Sahabat",
+    nomorWa: "6283867050282"
+  };
+
+  function jamSekarang() {
+    const d = new Date();
+    return d.getHours().toString().padStart(2, "0") + ":" + d.getMinutes().toString().padStart(2, "0");
+  }
+
+  function tambahPesan(teks, tipe) {
+    const row = document.createElement("div");
+    row.className = "row " + tipe;
+    if (tipe === "bot") row.innerHTML = '<div class="mini-avatar">🍜</div>';
+
+    const bubbleWrap = document.createElement("div");
+    bubbleWrap.className = "bubble-wrap";
+    bubbleWrap.innerHTML = '<div class="msg"></div><div class="timestamp"></div>';
+    bubbleWrap.querySelector(".msg").textContent = teks;
+    bubbleWrap.querySelector(".timestamp").textContent = jamSekarang();
+    row.appendChild(bubbleWrap);
+    messagesEl.appendChild(row);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function tampilkanMengetik() {
+    const old = document.getElementById("typing-row");
+    if (old) old.remove();
+    const row = document.createElement("div");
+    row.className = "row bot";
+    row.id = "typing-row";
+    row.innerHTML = '<div class="mini-avatar">🍜</div><div class="bubble-wrap"><div class="msg typing-dots"><span></span><span></span><span></span></div></div>';
+    messagesEl.appendChild(row);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function hapusMengetik() {
+    const el = document.getElementById("typing-row");
+    if (el) el.remove();
+  }
+
+  async function mintaJawaban(teks) {
+    if (!teks || teks.length > 3000) return;
+    tampilkanMengetik();
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: teks, history: chatHistory })
+      });
+      const data = await res.json().catch(() => ({}));
+      hapusMengetik();
+
+      if (!res.ok || !data.reply) throw new Error(data.error || "AI tidak mengembalikan jawaban.");
+      const reply = data.reply;
+      tambahPesan(reply, "bot");
+
+      chatHistory.push({ role: "user", content: teks });
+      chatHistory.push({ role: "assistant", content: reply });
+      while (chatHistory.length > 12) chatHistory.splice(0, 2);
+    } catch (e) {
+      hapusMengetik();
+      tambahPesan("Maaf, terjadi kesalahan koneksi. Coba kirim lagi ya 🙏", "bot");
+    }
+  }
+
+  async function kirim() {
+    const teks = inputEl.value.trim();
+    if (!teks) return;
+    tambahPesan(teks, "user");
+    inputEl.value = "";
+
+    if (cekIntentBayar(teks)) {
+      tambahPesan("Oke, ini QRIS-nya ya 👇", "bot");
+      bukaQris();
+      return;
+    }
+
+    riwayatPesanCustomer.push(teks);
+    await mintaJawaban(teks);
+  }
+
+  async function kirimCepat(teks) {
+    tambahPesan(teks, "user");
+    if (cekIntentBayar(teks)) {
+      bukaQris();
+      return;
+    }
+    riwayatPesanCustomer.push(teks);
+    await mintaJawaban(teks);
+  }
+
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") kirim();
+  });
+
+  function bukaQris() {
+    const pesan = `Halo ${appConfig.namaWarungWa}, saya sudah melakukan pembayaran via QRIS. Berikut bukti pembayaran saya:`;
+    const link = `https://wa.me/${appConfig.nomorWa}?text=${encodeURIComponent(pesan)}`;
+    document.getElementById("waConfirmLink").href = link;
+    document.getElementById("qrisModal").classList.add("open");
+  }
+
+  function tutupQris() {
+    document.getElementById("qrisModal").classList.remove("open");
+  }
+
+  function tutupQrisJikaLuar(e) {
+    if (e.target.id === "qrisModal") tutupQris();
+  }
+
+  function konfirmasiPesanan() {
+    if (riwayatPesanCustomer.length === 0) {
+      tambahPesan("Kamu belum ketik pesanan apa pun nih. Coba ketik dulu mau pesan apa ya 😊", "bot");
+      return;
+    }
+    const daftarPesan = riwayatPesanCustomer.map((p, i) => `${i + 1}. ${p}`).join("\n");
+    const pesan = `Halo ${appConfig.namaWarungWa}, saya ingin memesan:\n\n${daftarPesan}\n\nMohon konfirmasi ketersediaan & totalnya ya. Terima kasih! 🙏`;
+    const link = `https://wa.me/${appConfig.nomorWa}?text=${encodeURIComponent(pesan)}`;
+    tambahPesan("Oke, pesananmu sudah saya rangkum. Silakan lanjut konfirmasi ke WhatsApp ya 👇", "bot");
+    window.open(link, "_blank", "noopener,noreferrer");
+  }
+
+  function cekIntentBayar(teks) {
+    return /\b(bayar|qris|transfer|pembayaran)\b/i.test(teks);
+  }
+
+  async function init() {
+    try {
+      const res = await fetch("/api/config");
+      if (res.ok) appConfig = { ...appConfig, ...(await res.json()) };
+    } catch (_) {}
+
+    document.title = `Chatbot ${appConfig.namaWarung}`;
+    const title = document.querySelector(".header-text .title");
+    if (title) title.textContent = appConfig.namaWarung;
+
+    tambahPesan(`Halo! Selamat datang di ${appConfig.namaWarung} 🍜\nKetik pesan atau tap tombol di bawah untuk mulai.`, "bot");
+  }
+
+  init();
+</script>
+
+</body>
+</html>
